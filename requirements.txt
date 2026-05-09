@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+psutil
+python-dotenv
+python-multipart
+
+
+
+# whisper
+openai-whisper

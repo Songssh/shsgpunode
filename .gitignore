@@ -1,0 +1,83 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Local database files
+*.sqlite
+*.sqlite3
+*.db
+
+# Runtime data
+data/uploads/
+data/results/
+data/tasks/
+
+# Model files
+data/models/
+*.pt
+*.pth
+*.onnx
+*.safetensors
+*.bin
+*.gguf
+*.ckpt
+
+# Logs
+logs/
+*.log
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Node / frontend artifacts if added later
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Local scripts output
+*.pid
+*.seed
+
+# Upload/download artifacts
+*.zip
+*.tar
+*.tar.gz
+*.7z
