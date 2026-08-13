@@ -1,0 +1,3 @@
+qwen-tts
+huggingface-hub
+soundfile

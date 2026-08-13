@@ -310,6 +310,47 @@ async def _parse_task_submit_request(request: Request) -> dict:
         ),
     )
 
+def _get_executor_submit_modes(executor) -> list[str]:
+    """
+    Executor가 지원하는 submit mode 목록을 반환한다.
+
+    신규 executor:
+        get_submit_modes() 사용
+
+    기존 executor:
+        submit_mode 단일 필드를 fallback으로 사용
+
+    이렇게 해서 기존 Whisper/Ollama와 하위 호환을 유지한다.
+    """
+
+    if hasattr(executor, "get_submit_modes"):
+        try:
+            modes = executor.get_submit_modes()
+        except Exception:
+            modes = None
+
+        if isinstance(modes, (list, tuple, set)):
+            normalized = []
+
+            for mode in modes:
+                mode_text = str(mode).strip().lower()
+
+                if mode_text in ("json", "multipart"):
+                    if mode_text not in normalized:
+                        normalized.append(mode_text)
+
+            if normalized:
+                return normalized
+
+    legacy_mode = str(
+        getattr(executor, "submit_mode", "json")
+    ).strip().lower()
+
+    if legacy_mode not in ("json", "multipart"):
+        legacy_mode = "json"
+
+    return [legacy_mode]
+
 
 def _build_task_payload_for_response(task: dict) -> dict:
     """
@@ -399,24 +440,24 @@ async def submit_worker_task(
             detail=f"Executor is not available: {task_type}",
         )
 
-    submit_mode = getattr(executor, "submit_mode", "json")
+    submit_modes = _get_executor_submit_modes(executor)
     content_type = request.headers.get("content-type", "")
 
-    if submit_mode == "json" and not _is_json_request(content_type):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=(
-                f"Executor '{task_type}' requires submit_mode='json'. "
-                "Use Content-Type: application/json."
-            ),
-        )
+    if _is_json_request(content_type):
+        request_submit_mode = "json"
+    elif _is_multipart_request(content_type):
+        request_submit_mode = "multipart"
+    else:
+        request_submit_mode = None
 
-    if submit_mode == "multipart" and not _is_multipart_request(content_type):
+    if request_submit_mode not in submit_modes:
+        allowed_modes = ", ".join(submit_modes)
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=(
-                f"Executor '{task_type}' requires submit_mode='multipart'. "
-                "Use Content-Type: multipart/form-data."
+                f"Executor '{task_type}' does not support this submit mode. "
+                f"Allowed submit modes: {allowed_modes}."
             ),
         )
 

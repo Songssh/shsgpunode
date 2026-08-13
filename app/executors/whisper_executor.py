@@ -358,3 +358,90 @@ class WhisperExecutor(BaseExecutor):
                 del model
 
             cleanup_gpu_memory()
+            
+    def get_file_inputs(self) -> list[dict]:
+        return [
+            {
+                "name": "uploaded_audio",
+                "label": "Audio or Video File",
+                "payload_key": "input_file",
+                "required": True,
+                "accept": [
+                    "audio/*",
+                    "video/*",
+                ],
+                "max_files": 1,
+                "description": "Audio or video file to transcribe.",
+            }
+        ]
+
+
+    def get_examples(self) -> list[dict]:
+        return [
+            {
+                "id": "transcribe",
+                "title": "Transcribe Audio",
+                "description": "Transcribe an uploaded audio or video file with Whisper.",
+                "submit_mode": "multipart",
+                "request": {
+                    "task_type": self.task_type,
+                    "priority": 5,
+                    "payload": {
+                        "model": "base",
+                        "language": "auto",
+                        "output_format": "all",
+                        "file_inputs": {
+                            "input_file": "uploaded_audio"
+                        },
+                    },
+                },
+                "files": {
+                    "uploaded_audio": "sample.wav",
+                },
+            }
+        ]
+
+
+    def get_models(self) -> list[dict]:
+        model_dir = Path(settings.model_dir) / "whisper"
+
+        model_names = [
+            "tiny",
+            "base",
+            "small",
+            "medium",
+            "large",
+            "large-v2",
+            "large-v3",
+        ]
+
+        models = []
+
+        for model_name in model_names:
+            model_path = model_dir / f"{model_name}.pt"
+
+            models.append(
+                {
+                    "id": model_name,
+                    "display_name": f"Whisper {model_name}",
+                    "supported": True,
+                    "installed": model_path.is_file(),
+
+                    # 현재 WhisperExecutor는 매 작업마다 모델을 load 후
+                    # 작업 종료 시 GPU에서 제거하므로 상주 loaded 상태를
+                    # 유지하지 않는다.
+                    "loaded": False,
+
+                    # whisper.load_model(..., download_root=...)가
+                    # 필요할 경우 모델을 자동 다운로드한다.
+                    "downloadable": True,
+
+                    "features": {
+                        "transcription": True,
+                        "language_detection": True,
+                        "srt_output": True,
+                    },
+                }
+            )
+
+        return models

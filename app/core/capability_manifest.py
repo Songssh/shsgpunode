@@ -44,9 +44,15 @@ def build_capability_manifest() -> dict:
     return {
         "protocol_version": get_worker_protocol_version(),
         "task_types": executor_registry.get_task_types(),
+
         "task_submit_endpoint": "/api/worker/tasks",
         "task_status_endpoint": "/api/worker/tasks/{task_id}",
         "task_files_endpoint": "/api/worker/tasks/{task_id}/files",
+        # Central Server가 Worker artifact를 generic하게 다운로드할 때 사용한다.
+        "task_artifact_endpoint": (
+            "/api/worker/tasks/{task_id}/artifacts"
+            "?path={artifact_path}"
+        ),
         "executors": executor_registry.list_manifests(),
         "queue": build_queue_capability(),
     }

@@ -295,3 +295,104 @@ class LLMOllamaExecutor(BaseExecutor):
             if torch is not None and torch.cuda.is_available():
                 torch.cuda.empty_cache()
                 torch.cuda.ipc_collect()
+
+    def get_examples(self) -> list[dict]:
+        return [
+            {
+                "id": "generate",
+                "title": "Generate Text",
+                "description": "Generate a text response using a locally installed Ollama model.",
+                "submit_mode": "json",
+                "request": {
+                    "task_type": self.task_type,
+                    "priority": 5,
+                    "payload": {
+                        "model": self.default_model or "llama3.2:latest",
+                        "prompt": "안녕하세요. 간단하게 자기소개를 해주세요.",
+                        "system": "You are a helpful assistant.",
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "max_tokens": 512,
+                        "format": "text",
+                        "keep_alive": "5m",
+                    },
+                },
+            }
+        ]
+
+
+    def get_models(self) -> list[dict]:
+        if not self.enabled:
+            return []
+
+        try:
+            with httpx.Client(timeout=2.0) as client:
+                tags_response = client.get(f"{self.base_url}/api/tags")
+                tags_response.raise_for_status()
+                tags_data = tags_response.json()
+
+                loaded_names = set()
+
+                try:
+                    ps_response = client.get(f"{self.base_url}/api/ps")
+                    ps_response.raise_for_status()
+                    ps_data = ps_response.json()
+
+                    for item in ps_data.get("models", []):
+                        model_name = (
+                            item.get("name")
+                            or item.get("model")
+                        )
+
+                        if model_name:
+                            loaded_names.add(str(model_name))
+
+                except Exception:
+                    # /api/ps 조회 실패가 전체 모델 목록 capability를
+                    # 없애지는 않도록 한다.
+                    pass
+
+        except Exception:
+            return []
+
+        models = []
+
+        for item in tags_data.get("models", []):
+            model_name = (
+                item.get("name")
+                or item.get("model")
+            )
+
+            if not model_name:
+                continue
+
+            model_name = str(model_name)
+
+            details = item.get("details") or {}
+
+            models.append(
+                {
+                    "id": model_name,
+                    "display_name": model_name,
+                    "supported": True,
+                    "installed": True,
+                    "loaded": model_name in loaded_names,
+
+                    # 현재 LLMOllamaExecutor에는 /api/pull을 호출하는
+                    # 자동 다운로드 로직이 없으므로 false.
+                    "downloadable": False,
+
+                    "size_bytes": item.get("size"),
+                    "details": {
+                        "format": details.get("format"),
+                        "family": details.get("family"),
+                        "parameter_size": details.get("parameter_size"),
+                        "quantization_level": details.get("quantization_level"),
+                    },
+                    "features": {
+                        "text_generation": True,
+                    },
+                }
+            )
+
+        return models

@@ -118,3 +118,113 @@ async def submit_llm_generate_task(
     )
 
     return task
+
+@router.post("/tasks/tts")
+async def submit_tts_task(
+    mode: str = Form(...),
+    model_id: str = Form(...),
+    text: str = Form(...),
+    language: str = Form("Auto"),
+
+    # voice_clone
+    reference_audio: UploadFile | None = File(None),
+    ref_text: str | None = Form(None),
+    x_vector_only_mode: bool = Form(False),
+
+    # custom_voice / voice_design
+    speaker: str | None = Form(None),
+    instruct: str | None = Form(None),
+
+    # generation
+    max_new_tokens: int | None = Form(None),
+    temperature: float | None = Form(None),
+    top_p: float | None = Form(None),
+    top_k: int | None = Form(None),
+    repetition_penalty: float | None = Form(None),
+
+    priority: int = Form(5),
+):
+    """
+    Qwen3-TTS 로컬 테스트용 API.
+
+    Swagger UI에서 다음 세 모드를 직접 시험할 수 있다.
+
+    - voice_clone
+    - custom_voice
+    - voice_design
+
+    모든 실제 검증과 모델 다운로드/로드/추론은
+    Qwen3TTSExecutor가 담당한다.
+    """
+
+    normalized_mode = mode.strip().lower()
+
+    if normalized_mode not in (
+        "voice_clone",
+        "custom_voice",
+        "voice_design",
+    ):
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "mode must be one of: "
+                "voice_clone, custom_voice, voice_design"
+            ),
+        )
+
+    payload = {
+        "mode": normalized_mode,
+        "model_id": model_id.strip(),
+        "text": text,
+        "language": language,
+        "output_format": "wav",
+        "x_vector_only_mode": x_vector_only_mode,
+        "ref_text": ref_text,
+        "speaker": speaker,
+        "instruct": instruct,
+        "max_new_tokens": max_new_tokens,
+        "temperature": temperature,
+        "top_p": top_p,
+        "top_k": top_k,
+        "repetition_penalty": repetition_penalty,
+    }
+
+    # None인 optional 필드는 executor로 보내지 않는다.
+    payload = {
+        key: value
+        for key, value in payload.items()
+        if value is not None
+    }
+
+    if normalized_mode == "voice_clone":
+        if reference_audio is None:
+            raise HTTPException(
+                status_code=400,
+                detail=(
+                    "reference_audio is required "
+                    "for voice_clone mode."
+                ),
+            )
+
+        file_bytes = await reference_audio.read()
+
+        if not file_bytes:
+            raise HTTPException(
+                status_code=400,
+                detail="reference_audio is empty.",
+            )
+
+        reference_path = save_upload_file(
+            file_bytes,
+            reference_audio.filename or "reference.wav",
+        )
+
+        payload["reference_audio"] = str(reference_path)
+
+    task = create_and_queue_task(
+        task_type="audio_tts",
+        payload=payload,
+        priority=priority,
+    )
+
+    return task

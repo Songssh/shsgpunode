@@ -1,5 +1,6 @@
 from app.executors.whisper_executor import WhisperExecutor
 from app.executors.llm_ollama_executor import LLMOllamaExecutor
+from app.executors.qwen3_tts_executor import Qwen3TTSExecutor
 
 
 class ExecutorRegistry:
@@ -7,6 +8,7 @@ class ExecutorRegistry:
         self.executors = {}
         self.register(WhisperExecutor())
         self.register(LLMOllamaExecutor())
+        self.register(Qwen3TTSExecutor())
 
     def register(self, executor):
         self.executors[executor.task_type] = executor

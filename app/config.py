@@ -65,6 +65,52 @@ class Settings(BaseSettings):
     default_llm_model: str = "llama3.2:latest"
 
     # ------------------------------------------------------------
+    # TTS / Qwen3-TTS
+    # ------------------------------------------------------------
+    qwen3_tts_enabled: bool = True
+
+    # 모델이 로컬에 없을 때 자동 다운로드할지 여부.
+    qwen3_tts_auto_download: bool = True
+
+    # 실제 모델 저장 위치는:
+    # {model_dir}/qwen3_tts/
+    #
+    # 예:
+    # ./data/models/qwen3_tts/Qwen3-TTS-12Hz-0.6B-Base/
+    #
+    # 별도 absolute path 설정을 두지 않고 기존 model_dir 정책을 따른다.
+
+    # 기본 실행 장치.
+    # 예:
+    # cuda:0
+    # cpu
+    qwen3_tts_device: str = "cuda:0"
+
+    # 모델 dtype.
+    # 지원 예정:
+    # auto
+    # float16
+    # bfloat16
+    # float32
+    qwen3_tts_dtype: str = "bfloat16"
+
+    # Attention 구현.
+    #
+    # auto:
+    #   별도 attn_implementation을 강제하지 않는다.
+    #
+    # sdpa:
+    #   PyTorch SDPA 사용
+    #
+    # flash_attention_2:
+    #   사용자가 별도로 FlashAttention 2를 설치한 경우
+    qwen3_tts_attention: str = "auto"
+
+    # 동시에 GPU 메모리에 유지할 Qwen3-TTS 모델 수.
+    # 현재 Worker 자체가 worker_count=1이므로 첫 버전은 1이 가장 안전하다.
+    qwen3_tts_max_loaded_models: int = 1
+
+    # ------------------------------------------------------------
     # Pydantic Settings
     # ------------------------------------------------------------
     model_config = SettingsConfigDict(
