@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -12,7 +13,8 @@ from app.hardware.system_info import get_system_info
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    tz = ZoneInfo(settings.app_timezone)
+    return datetime.now(tz).isoformat()
 
 
 def get_setting(name: str, default: Any) -> Any:

@@ -1,6 +1,7 @@
 import asyncio
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 
 from fastapi import FastAPI
 
@@ -16,7 +17,8 @@ from app.core.task_manager import queue_worker_loop
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    tz = ZoneInfo(settings.app_timezone)
+    return datetime.now(tz).isoformat()
 
 
 def get_setting(name: str, default):

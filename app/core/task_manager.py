@@ -7,6 +7,7 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path, PurePosixPath
 from uuid import uuid4
+from zoneinfo import ZoneInfo
 
 from app.core.workdir import create_task_workdir
 from app.executors.registry import executor_registry
@@ -29,7 +30,9 @@ TERMINAL_STATUSES = {
 
 
 def now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat()
+    from app.config import settings
+    tz = ZoneInfo(settings.app_timezone)
+    return datetime.now(tz).isoformat()
 
 
 def _normalize_priority(priority: int | None) -> int:

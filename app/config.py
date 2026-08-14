@@ -12,6 +12,9 @@ class Settings(BaseSettings):
     worker_version: str = "0.1.0"
     worker_protocol_version: str = "1.0"
 
+    # Timezone for timestamp reporting
+    app_timezone: str = "UTC" 
+
     # ------------------------------------------------------------
     # Node
     # ------------------------------------------------------------
